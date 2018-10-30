@@ -33,6 +33,10 @@ class Viewer extends Component {
     });
   }
 
+  componentDidCatch(error, info) {
+    return true;
+  }
+
   renderExpressions(code) {
     return this.evaluateExpressions(this.props.expressions);
   }
