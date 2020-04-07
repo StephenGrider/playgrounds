@@ -6,27 +6,48 @@ import SplitPane from 'react-split-pane';
 
 class Viewer extends Component {
   evaluateExpressions(expressions) {
-    const formattedExpressions = _.mapValues(expressions, expression => {
-      const result = eval(expression);
+    const formattedExpressions = _.chain(expressions)
+      .mapValues((expression) => {
+        const results = [];
 
-      try {
-        if (result && result.type && result.props) {
-          return result;
-        } else if (_.isFunction(result) && result.name) {
-          return <i>Function {result.name}</i>;
-        } else if (_.isBoolean(result)) {
-          return result ? 'True' : 'False';
-        } else if (_.isFunction(result.print) && _.isFunction(result.matMul)) {
-          return result.toString().replace('Tensor\n', '');
-        } else if (_.isObject(result) || _.isArray(result)) {
-          return JSON.stringify(result);
+        const _log = console.log;
+        console.log = (...args) => {
+          results.push(...args);
+        };
+
+        try {
+          results.push(eval(expression));
+        } catch (err) {
+        } finally {
+          console.log = _log;
         }
-      } catch (e) {
-        return '';
-      }
 
-      return result;
-    });
+        return results;
+      })
+      .flatMap()
+      .flatMap((result) => {
+        console.log(result);
+        try {
+          if (result && result.type && result.props) {
+            return result;
+          } else if (_.isFunction(result) && result.name) {
+            return <i>Function {result.name}</i>;
+          } else if (_.isBoolean(result)) {
+            return result ? 'True' : 'False';
+          } else if (
+            _.isFunction(result.print) &&
+            _.isFunction(result.matMul)
+          ) {
+            return result.toString().replace('Tensor\n', '');
+          } else if (_.isObject(result) || _.isArray(result)) {
+            return JSON.stringify(result);
+          }
+        } catch (e) {
+          return '';
+        }
+        return result;
+      })
+      .value();
 
     return _.map(formattedExpressions, (expression, line) => {
       return <div>{expression}</div>;
